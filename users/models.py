@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
+
     class GenderChoices(models.TextChoices):
         MALE = ("male", "Male")
         FEMALE = ("femail", "Female")
