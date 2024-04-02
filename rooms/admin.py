@@ -4,7 +4,7 @@ from .models import Room, Amenity
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ("name", "country", "city", "price", "owner")
+    list_display = ("name", "country", "city", "price", "host")
     list_filter = ("country", "city")
 
 

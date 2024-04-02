@@ -10,7 +10,7 @@ class Room(CommonModel):
         PRIVATE_ROOM = ("private_room", "Private Room")
         SHARED_ROOM = ("shared_room", "Shared Room")
 
-    name = models.CharField(max_length=100, default="")
+    name = models.CharField(max_length=100)
     country = models.CharField(max_length=50, default="")
     city = models.CharField(max_length=80, default="")
     price = models.PositiveBigIntegerField()
@@ -21,7 +21,8 @@ class Room(CommonModel):
     pet_allowed = models.BooleanField(default=False)
     room_type = models.CharField(max_length=30, choices=TypeChoices, verbose_name="room type")
     amenities = models.ManyToManyField("rooms.Amenity")
-    owner = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    host = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    categories = models.ForeignKey("categories.Category", on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return self.name

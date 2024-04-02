@@ -34,6 +34,13 @@ CUSTOM_APPS = [
     "users.apps.UsersConfig",
     "rooms.apps.RoomsConfig",
     "common.apps.CommonConfig",
+    "bookings.apps.BookingsConfig",
+    "categories.apps.CategoriesConfig",
+    "direct_messages.apps.DirectMessagesConfig",
+    "experiences.apps.ExperiencesConfig",
+    "media.apps.MediaConfig",
+    "wishlists.apps.WishlistsConfig",
+    "reviews.apps.ReviewsConfig",
 ]
 
 SYSTEM_APPS = [
