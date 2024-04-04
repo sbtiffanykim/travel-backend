@@ -20,12 +20,17 @@ class Room(CommonModel):
     address = models.CharField(max_length=250)
     pet_allowed = models.BooleanField(default=False)
     room_type = models.CharField(max_length=30, choices=TypeChoices, verbose_name="room type")
-    amenities = models.ManyToManyField("rooms.Amenity")
-    host = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    categories = models.ForeignKey("categories.Category", on_delete=models.SET_NULL, blank=True, null=True)
+    amenities = models.ManyToManyField("rooms.Amenity", related_name="rooms")
+    host = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="rooms")
+    categories = models.ForeignKey(
+        "categories.Category", on_delete=models.SET_NULL, blank=True, null=True, related_name="rooms"
+    )
 
     def __str__(self):
         return self.name
+
+    def total_amenities(self):
+        return self.amenities.count()
 
 
 class Amenity(CommonModel):
