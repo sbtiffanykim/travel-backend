@@ -1,5 +1,6 @@
 from django.db import models
 from common.models import CommonModel
+from django.db.models import Avg
 
 
 class Room(CommonModel):
@@ -31,6 +32,21 @@ class Room(CommonModel):
 
     def total_amenities(self):
         return self.amenities.count()
+
+    def average_rating(self):
+        avg_rating = self.reviews.all().aggregate(Avg("rating"))["rating__avg"]
+        if not avg_rating:
+            return "No Reviews"
+        else:
+            return round(avg_rating, 2)
+        # total_reviews = self.reviews.count()
+        # if not total_reviews:
+        #     return "No Reviews"
+        # else:
+        #     sum_ratings = 0
+        #     for review in self.reviews.all().values("rating"):
+        #         sum_ratings += review["rating"]
+        #     return round(sum_ratings / total_reviews, 2)
 
 
 class Amenity(CommonModel):
