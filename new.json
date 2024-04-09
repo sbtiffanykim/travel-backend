@@ -1,0 +1,23 @@
+{
+    "name": "house created with drf",
+    "country": "Korea",
+    "city": "Seoul",
+    "price": 1000,
+    "number_of_rooms": 3,
+    "bathrooms": 1,
+    "description": "new one",
+    "address": "test",
+    "pet_allowed": false,
+    "room_type": "private_room",
+    "amenities": [
+        {
+            "name": "Shower",
+            "description": null,
+            "icon": null
+        }
+    ],
+    "categories": {
+        "name": "Tiny Rooms",
+        "kind": "rooms"
+    },    
+}

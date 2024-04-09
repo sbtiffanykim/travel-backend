@@ -1,8 +1,29 @@
-from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
 from .models import Room, Amenity
+from users.serializers import SimplifiedUserSerializer
+from categories.serializers import CategorySerializer
 
 
-class AmenitySerializer(serializers.ModelSerializer):
+class RoomListSerializer(ModelSerializer):
+
+    class Meta:
+        model = Room
+        fields = ("pk", "name", "country", "city", "price")
+
+
+class AmenitySerializer(ModelSerializer):
+
     class Meta:
         model = Amenity
+        fields = ("name", "description", "icon")
+
+
+class RoomDetailSerializer(ModelSerializer):
+
+    host = SimplifiedUserSerializer(read_only=True)
+    amenities = AmenitySerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+
+    class Meta:
+        model = Room
         fields = "__all__"

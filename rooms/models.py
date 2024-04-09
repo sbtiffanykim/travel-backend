@@ -14,16 +14,16 @@ class Room(CommonModel):
     name = models.CharField(max_length=100)
     country = models.CharField(max_length=50, default="")
     city = models.CharField(max_length=80, default="")
-    price = models.PositiveBigIntegerField()
-    number_of_rooms = models.PositiveBigIntegerField(verbose_name="rooms")
-    bathrooms = models.PositiveBigIntegerField()
+    price = models.PositiveIntegerField()
+    number_of_rooms = models.PositiveIntegerField(verbose_name="rooms")
+    bathrooms = models.PositiveIntegerField()
     description = models.TextField()
     address = models.CharField(max_length=250)
     pet_allowed = models.BooleanField(default=False)
     room_type = models.CharField(max_length=30, choices=TypeChoices, verbose_name="room type")
     amenities = models.ManyToManyField("rooms.Amenity", related_name="rooms")
     host = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="rooms")
-    categories = models.ForeignKey(
+    category = models.ForeignKey(
         "categories.Category", on_delete=models.SET_NULL, blank=True, null=True, related_name="rooms"
     )
 
