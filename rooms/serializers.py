@@ -15,7 +15,7 @@ class AmenitySerializer(ModelSerializer):
 
     class Meta:
         model = Amenity
-        fields = ("name", "description", "icon")
+        fields = ("pk", "name", "description", "icon")
 
 
 class RoomDetailSerializer(ModelSerializer):
