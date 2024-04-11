@@ -36,12 +36,12 @@ class Room(CommonModel):
     def average_rating(self):
         avg_rating = self.reviews.all().aggregate(Avg("rating"))["rating__avg"]
         if not avg_rating:
-            return "No Reviews"
+            return 0
         else:
             return round(avg_rating, 2)
         # total_reviews = self.reviews.count()
         # if not total_reviews:
-        #     return "No Reviews"
+        #     return 0
         # else:
         #     sum_ratings = 0
         #     for review in self.reviews.all().values("rating"):
