@@ -39,14 +39,6 @@ class Room(CommonModel):
             return 0
         else:
             return round(avg_rating, 2)
-        # total_reviews = self.reviews.count()
-        # if not total_reviews:
-        #     return 0
-        # else:
-        #     sum_ratings = 0
-        #     for review in self.reviews.all().values("rating"):
-        #         sum_ratings += review["rating"]
-        #     return round(sum_ratings / total_reviews, 2)
 
 
 class Amenity(CommonModel):
