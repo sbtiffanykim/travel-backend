@@ -1,8 +1,9 @@
+from django.conf import settings
+from django.utils import timezone
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from django.db import transaction
-from django.conf import settings
-from rest_framework.exceptions import NotFound, NotAuthenticated, ParseError, PermissionDenied
+from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from categories.models import Category
@@ -10,6 +11,10 @@ from .models import Room, Amenity
 from .serializers import RoomListSerializer, RoomDetailSerializer, AmenitySerializer
 from reviews.serialrizers import ReviewSerializer
 from media.serializers import PhotoSerializer
+from reviews.models import Review
+from media.models import Photo
+from bookings.models import Booking
+from bookings.serializers import PublicBookingSerializer, CreateBookingSerializer
 
 
 class Rooms(APIView):
@@ -134,7 +139,7 @@ class RoomReviews(APIView):
     def post(self, request, pk):
         serializer = ReviewSerializer(data=request.data)
         if serializer.is_valid():
-            review = serializer.save(user=request.user, kind="room", room=self.get_object(pk))
+            review = serializer.save(user=request.user, kind=Review.ReviewKindChoices.ROOM, room=self.get_object(pk))
             serializer = ReviewSerializer(review)
             print(serializer.data)
             return Response(serializer.data)
@@ -178,7 +183,7 @@ class RoomPhotos(APIView):
             raise PermissionDenied
         serializer = PhotoSerializer(data=request.data)
         if serializer.is_valid():
-            photo = serializer.save(room=room, kind="room")
+            photo = serializer.save(room=room, kind=Photo.PhotoKindChoices.ROOM)
             serializer = PhotoSerializer(photo)
             return Response(serializer.data)
         else:
@@ -225,3 +230,34 @@ class AmenityDetail(APIView):
     def delete(self, request, pk):
         self.get_object(pk).delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+class RoomBookings(APIView):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Room.objects.get(pk=pk)
+        except Room.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        current_time = timezone.localtime(timezone.now()).date()
+        # user가 month, year를 넘겨주면 거기에 대한 booking 보여주기
+        room = self.get_object(pk=pk)
+        bookings = Booking.objects.filter(
+            room__pk=room.pk, kind=Booking.BookingKindChoices.ROOM, check_in__gt=current_time
+        )
+        serializer = PublicBookingSerializer(bookings, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        room = self.get_object(pk)
+        serializer = CreateBookingSerializer(data=request.data, context={"pk": pk})
+        if serializer.is_valid():
+            saved_booking = serializer.save(user=request.user, kind=Booking.BookingKindChoices.ROOM, room=room)
+            serializer = PublicBookingSerializer(saved_booking)
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
