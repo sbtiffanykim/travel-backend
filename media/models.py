@@ -9,7 +9,7 @@ class Photo(CommonModel):
         ROOM = ("room", "Room")
         EXPERIENCE = ("experience", "Experience")
 
-    file = models.ImageField()
+    file = models.URLField()
     description = models.CharField(max_length=150)
     kind = models.CharField(max_length=14, choices=PhotoKindChoices.choices)
     room = models.ForeignKey("rooms.Room", on_delete=models.CASCADE, blank=True, null=True, related_name='photos')
@@ -21,7 +21,7 @@ class Photo(CommonModel):
 class Video(CommonModel):
     """Video Description"""
 
-    file = models.FileField()
+    file = models.URLField()
     experience = models.OneToOneField("experiences.Experience", on_delete=models.CASCADE, related_name='videos')
 
     def __str__(self):

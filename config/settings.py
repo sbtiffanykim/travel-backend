@@ -141,3 +141,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Auth
 AUTH_USER_MODEL = "users.User"
+
+# Pagination
+PAGE_SIZE = 5
+
+# Media files
+MEDIA_ROOT = "uploads"
+MEDIA_URL = "user-uploads/"

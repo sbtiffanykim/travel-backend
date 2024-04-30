@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from django.db import transaction
+from django.conf import settings
 from rest_framework.exceptions import NotFound, NotAuthenticated, ParseError, PermissionDenied
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
@@ -7,6 +8,7 @@ from categories.models import Category
 from .models import Room, Amenity
 from .serializers import RoomListSerializer, RoomDetailSerializer, AmenitySerializer
 from reviews.serialrizers import ReviewSerializer
+from media.serializers import PhotoSerializer
 
 
 class Rooms(APIView):
@@ -121,7 +123,7 @@ class RoomReview(APIView):
             page = int(page)
         except ValueError:
             page = 1
-        page_size = 3
+        page_size = settings.PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
         room = self.get_object(pk)
@@ -144,11 +146,34 @@ class RoomAmenities(APIView):
             page = int(page)
         except ValueError:
             page = 1
-        page_size = 3
+        page_size = settings.PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
         serializer = AmenitySerializer(room.amenities.all()[start:end], many=True)
         return Response(serializer.data)
+
+
+class RoomPhotos(APIView):
+
+    def get_object(self, pk):
+        try:
+            return Room.objects.get(pk=pk)
+        except Room.DoesNotExist:
+            raise NotFound
+
+    def post(self, request, pk):
+        room = self.get_object(pk)
+        if not request.user.is_authenticated:
+            raise NotAuthenticated
+        if request.user != room.host:
+            raise PermissionDenied
+        serializer = PhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            photo = serializer.save(room=room, kind="room")
+            serializer = PhotoSerializer(photo)
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
 
 
 class Amenities(APIView):
