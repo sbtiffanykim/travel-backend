@@ -6,7 +6,7 @@ urlpatterns = [
     path("", views.CreateAccount.as_view()),
     path("me", views.PrivateUserProfile.as_view()),
     path("@<str:username>", views.PublicUserProfile.as_view()),
-    # path("@<str:username>/rooms", views.PublicUserProfile.as_view()),
+    path("@<str:username>/rooms", views.HostRooms.as_view()),
     # path("@<str:username>/rooms/reviews", views.PublicUserProfile.as_view()),
     # path("@<str:username>/reviews", views.PublicUserProfile.as_view()),
     path("change-password", views.ChangePassword.as_view()),

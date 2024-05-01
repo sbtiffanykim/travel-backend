@@ -54,3 +54,15 @@ class RoomDetailSerializer(serializers.ModelSerializer):
     def get_is_liked(self, room):
         request = self.context.get("request")
         return Wishlist.objects.filter(user=request.user, rooms__pk=room.pk).exists()
+
+
+class HostRoomSerializer(serializers.ModelSerializer):
+
+    rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Room
+        fields = ("name", "country", "city", "room_type", "rating")
+
+    def get_rating(self, room):
+        return room.average_rating()

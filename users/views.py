@@ -7,6 +7,8 @@ from rest_framework.exceptions import ParseError, NotFound, ValidationError
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import User
 from . import serializers
+from rooms.serializers import HostRoomSerializer
+from rooms.models import Room
 
 
 class CreateAccount(APIView):
@@ -73,7 +75,7 @@ class ChangePassword(APIView):
         if new_password != confirm_password:
             raise ValidationError("Passwords do not match")
         try:
-            validate_password(password)
+            validate_password(new_password)
         except Exception as e:
             raise ParseError(e)
         if user.check_password(old_password):
@@ -94,7 +96,7 @@ class LogIn(APIView):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
-            return Response({"login": "True"})
+            return Response({"login": "success"})
         else:
             return Response({"Error": "Wrong Password"})
 
@@ -105,4 +107,18 @@ class LogOut(APIView):
 
     def post(self, request):
         logout(request)
-        return Response({"logout": "True"})
+        return Response({"logout": "success"})
+
+
+class HostRooms(APIView):
+
+    def get(self, request, username):
+        try:
+            host = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise NotFound
+        if not host.is_host:
+            raise ParseError("The User Does not own any rooms")
+        rooms = host.rooms.all()
+        serializer = HostRoomSerializer(rooms, many=True)
+        return Response(serializer.data)
