@@ -1,8 +1,9 @@
 from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.password_validation import validate_password
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ParseError, NotFound
+from rest_framework.exceptions import ParseError, NotFound, ValidationError
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import User
 from . import serializers
@@ -13,7 +14,11 @@ class CreateAccount(APIView):
     def post(self, request):
         password = request.data.get("password")
         if not password:
-            raise ParseError
+            raise ParseError("Password is required")
+        try:
+            validate_password(password)
+        except Exception as e:
+            raise ParseError(e)
         serializer = serializers.PrivateUserSerializer(data=request.data)
         if serializer.is_valid():
             created_user = serializer.save()
@@ -62,16 +67,21 @@ class ChangePassword(APIView):
         user = request.user
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
         if not old_password or not new_password:
             raise ParseError
-
+        if new_password != confirm_password:
+            raise ValidationError("Passwords do not match")
+        try:
+            validate_password(password)
+        except Exception as e:
+            raise ParseError(e)
         if user.check_password(old_password):
             user.set_password(new_password)
             user.save()
             return Response(status=HTTP_200_OK)
         else:
             return Response(status=HTTP_400_BAD_REQUEST)
-        confirm_password = request.data.get("confirm_password")
 
 
 class LogIn(APIView):

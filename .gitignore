@@ -171,3 +171,5 @@ cython_debug/
 
 # Media files: only using during development
 uploads
+
+*md
