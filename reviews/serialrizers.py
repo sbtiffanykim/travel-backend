@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from .models import Review
-from users.serializers import SimplifiedUserSerializer
+from common.serializers import SimpleUserSerializer
 from common.serializers import SimpleRoomSerializer
 
 
 class ReviewSerializer(serializers.ModelSerializer):
 
-    user = SimplifiedUserSerializer(read_only=True)
+    user = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Review

@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import Room, Amenity
-from users.serializers import SimplifiedUserSerializer
-from reviews.serialrizers import ReviewSerializer
+from common.serializers import SimpleUserSerializer
 from categories.serializers import CategorySerializer
 from media.serializers import PhotoSerializer
 from wishlists.models import Wishlist
@@ -33,7 +32,7 @@ class RoomListSerializer(serializers.ModelSerializer):
 
 class RoomDetailSerializer(serializers.ModelSerializer):
 
-    host = SimplifiedUserSerializer(read_only=True)
+    host = SimpleUserSerializer(read_only=True)
     amenities = AmenitySerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
     rating = serializers.SerializerMethodField()

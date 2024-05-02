@@ -7,7 +7,7 @@ from rest_framework.exceptions import ParseError, NotFound, ValidationError
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import User
 from . import serializers
-from common.serializers import SimpleRoomSerializer
+from common.serializers import SimpleRoomSerializer, SimpleUserSerializer
 from rooms.models import Room
 from reviews.serialrizers import HostReviewSerializer
 
@@ -58,7 +58,7 @@ class PublicUserProfile(APIView):
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             raise NotFound
-        serializer = serializers.PrivateUserSerializer(user)
+        serializer = SimpleUserSerializer(user)
         return Response(serializer.data)
 
 
