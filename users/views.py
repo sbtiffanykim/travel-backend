@@ -9,6 +9,7 @@ from .models import User
 from . import serializers
 from rooms.serializers import HostRoomSerializer
 from rooms.models import Room
+from reviews.serialrizers import HostReviewSerializer
 
 
 class CreateAccount(APIView):
@@ -118,7 +119,24 @@ class HostRooms(APIView):
         except User.DoesNotExist:
             raise NotFound
         if not host.is_host:
-            raise ParseError("The User Does not own any rooms")
+            raise ParseError("The user does not own any rooms")
         rooms = host.rooms.all()
         serializer = HostRoomSerializer(rooms, many=True)
+        return Response(serializer.data)
+
+
+class HostReviews(APIView):
+
+    def get_object(self, username):
+        try:
+            return User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, username):
+        host = self.get_object(username)
+        if not host.is_host:
+            raise ParseError("The User Does not own any rooms")
+        all_reviews = host.reviews.all()
+        serializer = HostReviewSerializer(all_reviews, many=True)
         return Response(serializer.data)
