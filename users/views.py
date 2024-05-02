@@ -8,6 +8,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import User
 from . import serializers
 from common.serializers import SimpleRoomSerializer, SimpleUserSerializer
+from rooms.serializers import HostRoomSerializer
 from reviews.models import Review
 from reviews.serialrizers import UserReviewSerializer, HostReviewSerializer
 
@@ -121,7 +122,7 @@ class HostRooms(APIView):
         if not host.is_host:
             raise ParseError("The user does not own any rooms")
         rooms = host.rooms.all().order_by("-created_date")
-        serializer = SimpleRoomSerializer(rooms, many=True)
+        serializer = HostRoomSerializer(rooms, many=True)
         return Response(serializer.data)
 
 

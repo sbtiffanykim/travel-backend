@@ -40,6 +40,9 @@ class Room(CommonModel):
         else:
             return round(avg_rating, 2)
 
+    def total_reviews(self):
+        return self.reviews.count()
+
 
 class Amenity(CommonModel):
     name = models.CharField(max_length=100)
