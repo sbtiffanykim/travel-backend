@@ -13,10 +13,18 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ("user", "rating", "comments")
 
 
-class HostReviewSerializer(serializers.ModelSerializer):
-
-    room = SimpleRoomSerializer(read_only=True)
+class UserReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ("room", "rating", "comments", "created_date")
+        fields = ("rating", "comments", "created_date")
+
+
+class HostReviewSerializer(serializers.ModelSerializer):
+
+    room = SimpleRoomSerializer(read_only=True)
+    user = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ("user", "kind", "room", "rating", "comments", "created_date")

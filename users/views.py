@@ -8,8 +8,8 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import User
 from . import serializers
 from common.serializers import SimpleRoomSerializer, SimpleUserSerializer
-from rooms.models import Room
-from reviews.serialrizers import HostReviewSerializer
+from reviews.models import Review
+from reviews.serialrizers import UserReviewSerializer, HostReviewSerializer
 
 
 class CreateAccount(APIView):
@@ -58,7 +58,7 @@ class PublicUserProfile(APIView):
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             raise NotFound
-        serializer = SimpleUserSerializer(user)
+        serializer = serializers.PublicUserSerializer(user)
         return Response(serializer.data)
 
 
@@ -120,17 +120,12 @@ class HostRooms(APIView):
             raise NotFound
         if not host.is_host:
             raise ParseError("The user does not own any rooms")
-        rooms = host.rooms.all()
+        rooms = host.rooms.all().order_by("-created_date")
         serializer = SimpleRoomSerializer(rooms, many=True)
         return Response(serializer.data)
 
 
-# class HostRoomReviews(APIView):
-#     def get(self, request, username):
-#         pass
-
-
-class HostReviews(APIView):
+class HostRoomReviews(APIView):
 
     def get_object(self, username):
         try:
@@ -141,7 +136,23 @@ class HostReviews(APIView):
     def get(self, request, username):
         host = self.get_object(username)
         if not host.is_host:
-            raise ParseError("The User Does not own any rooms")
-        all_reviews = host.reviews.all()
-        serializer = HostReviewSerializer(all_reviews, many=True)
+            raise ParseError("The User does not own any rooms")
+        room_reviews = Review.objects.filter(room__host=host).order_by("room__pk")
+        serializer = HostReviewSerializer(room_reviews, many=True)
+        return Response(serializer.data)
+
+
+class UserReviews(APIView):
+    # see all reviews the user left
+
+    def get_object(self, username):
+        try:
+            return User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise NotFound("User not found")
+
+    def get(self, request, username):
+        user = self.get_object(username)
+        all_reviews = user.reviews.all().order_by("-created_date")
+        serializer = UserReviewSerializer(all_reviews, many=True)
         return Response(serializer.data)

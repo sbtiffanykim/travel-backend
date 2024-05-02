@@ -5,18 +5,13 @@ from users.models import User
 
 class SimpleRoomSerializer(serializers.ModelSerializer):
 
-    rating = serializers.SerializerMethodField()
-
     class Meta:
         model = Room
-        fields = ("name", "country", "city", "room_type", "rating")
-
-    def get_rating(self, room):
-        return room.average_rating()
+        fields = ("pk", "name", "country", "city")
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("name", "username", "profile_picture")
+        fields = ("pk", "name", "username", "profile_picture")
