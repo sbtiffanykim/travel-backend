@@ -24,7 +24,7 @@ class RoomListSerializer(serializers.ModelSerializer):
         fields = ("pk", "name", "country", "city", "price", "rating", "is_owner", "photos")
 
     def get_rating(self, room):
-        return room.average_rating()
+        return room.rating_average()
 
     def get_is_owner(self, room):
         return room.host == self.context.get("request").user
@@ -45,7 +45,7 @@ class RoomDetailSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_rating(self, room):
-        return room.average_rating()
+        return room.rating_average()
 
     def get_is_owner(self, room):
         return room.host == self.context.get("request").user
@@ -65,7 +65,7 @@ class HostRoomSerializer(serializers.ModelSerializer):
         fields = ("pk", "name", "country", "city", "room_type", "rating", "total_reviews")
 
     def get_rating(self, room):
-        return room.average_rating()
+        return room.rating_average()
 
     def get_total_reviews(self, room):
         return room.total_reviews()

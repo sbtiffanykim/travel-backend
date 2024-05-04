@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Avg
 from common.models import CommonModel
 
 
@@ -9,16 +10,30 @@ class Experience(CommonModel):
     host = models.ForeignKey("users.User", on_delete=models.CASCADE)
     country = models.CharField(max_length=50, default="")
     city = models.CharField(max_length=80, default="")
-    price = models.PositiveBigIntegerField()
-    description = models.TextField()
     address = models.CharField(max_length=250)
+    price = models.PositiveBigIntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+
+    description = models.TextField()
     included_items = models.ManyToManyField("experiences.IncludedItem")
-    categories = models.ForeignKey("categories.Category", on_delete=models.SET_NULL, blank=True, null=True)
+    categories = models.ManyToManyField("categories.Category")
+    max_capacity = models.PositiveIntegerField(blank=True, null=True)  # number of guests allowed
 
     def __str__(self):
         return self.name
+
+    def total_reviews(self):
+        return self.reviews.count()
+
+    def rating_average(self):
+        rating_avg = self.reviews.all().aggregate(Avg("rating"))["rating__avg"]
+        if not rating_avg:
+            return 0
+        else:
+            return round(rating_avg, 2)
+
+    # remaining seats
 
 
 class IncludedItem(CommonModel):
