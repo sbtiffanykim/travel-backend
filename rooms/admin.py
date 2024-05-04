@@ -15,7 +15,7 @@ class RoomAdmin(admin.ModelAdmin):
 
     actions = (modify_prices,)
 
-    list_display = ("name", "country", "city", "price", "host", "total_amenities", "average_rating")
+    list_display = ("name", "country", "city", "price", "host", "total_amenities", "rating_average")
     list_filter = ("country", "city")
     search_fields = ("name",)
     search_help_text = "Search room with its name"

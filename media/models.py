@@ -22,7 +22,7 @@ class Video(CommonModel):
     """Video Description"""
 
     file = models.URLField()
-    experience = models.OneToOneField("experiences.Experience", on_delete=models.CASCADE, related_name='videos')
+    experience = models.OneToOneField("experiences.Experience", on_delete=models.CASCADE, related_name='video')
 
     def __str__(self):
         return f'Video for {self.experience}'
