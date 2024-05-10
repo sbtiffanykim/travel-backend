@@ -129,3 +129,18 @@ class ExperienceDetail(APIView):
             raise PermissionDenied
         experience.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+class ExperienceItems(APIView):
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        items = experience.included_items.all()
+        serializer = IncludedItemSerializer(items, many=True)
+        return Response(serializer.data)
