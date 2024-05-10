@@ -3,6 +3,7 @@ from .models import Experience, IncludedItem
 from common.serializers import SimpleUserSerializer
 from categories.serializers import CategorySerializer
 from reviews.serialrizers import ReviewSerializer
+from media.serializers import PhotoSerializer, VideoSerializer
 
 
 class IncludedItemSerializer(serializers.ModelSerializer):
@@ -17,6 +18,8 @@ class ExperienceListSerializer(serializers.ModelSerializer):
     total_reviews = serializers.SerializerMethodField()
     rating_average = serializers.SerializerMethodField()
     host = SimpleUserSerializer()
+    photos = PhotoSerializer(many=True, read_only=True)
+    video = VideoSerializer(read_only=True)
 
     class Meta:
         model = Experience
@@ -34,7 +37,9 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
     included_items = IncludedItemSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
     host = SimpleUserSerializer()
-    reviews = ReviewSerializer(many=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
+    photos = PhotoSerializer(many=True, read_only=True)
+    video = VideoSerializer(read_only=True)
     total_reviews = serializers.SerializerMethodField()
     rating_average = serializers.SerializerMethodField()
 
