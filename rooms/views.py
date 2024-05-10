@@ -99,7 +99,7 @@ class RoomDetail(APIView):
                             amenity = Amenity.objects.get(pk=amenity_pk)
                             amenities.append(amenity)
                         except Amenity.DoesNotExist:
-                            raise ParseError("Amenity not found")
+                            raise ParseError(f"Amenity {amenity_pk} not found")
                     room.amenities.set(amenities)
             return Response(RoomDetailSerializer(room, context={"request": request}).data)
 

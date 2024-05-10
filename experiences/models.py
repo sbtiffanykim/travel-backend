@@ -14,7 +14,6 @@ class Experience(CommonModel):
     price = models.PositiveBigIntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-
     description = models.TextField()
     included_items = models.ManyToManyField("experiences.IncludedItem")
     categories = models.ManyToManyField("categories.Category")
