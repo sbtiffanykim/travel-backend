@@ -7,6 +7,7 @@ from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from categories.models import Category
+from common.paginations import CustomPagination
 from .models import Room, Amenity
 from .serializers import RoomListSerializer, RoomDetailSerializer, AmenitySerializer
 from reviews.serialrizers import ReviewSerializer
@@ -17,14 +18,14 @@ from bookings.models import Booking
 from bookings.serializers import PublicBookingSerializer, CreateBookingSerializer
 
 
-class Rooms(APIView):
+class Rooms(APIView, CustomPagination):
 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
         all_rooms = Room.objects.all()
-        serializer = RoomListSerializer(all_rooms, many=True, context={"request": request})
-        return Response(serializer.data)
+        serializer = RoomListSerializer(self.paginate(all_rooms, request), many=True, context={"request": request})
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request):
         serializer = RoomDetailSerializer(data=request.data)
@@ -113,7 +114,7 @@ class RoomDetail(APIView):
         return Response(status=HTTP_204_NO_CONTENT)
 
 
-class RoomReviews(APIView):
+class RoomReviews(APIView, CustomPagination):
 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -124,17 +125,9 @@ class RoomReviews(APIView):
             raise NotFound
 
     def get(self, request, pk):
-        try:
-            page = request.query_params.get("page", 1)
-            page = int(page)
-        except ValueError:
-            page = 1
-        page_size = settings.PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
         room = self.get_object(pk)
-        serializer = ReviewSerializer(room.reviews.all()[start:end], many=True)
-        return Response(serializer.data)
+        serializer = ReviewSerializer(self.paginate(room.reviews.all(), request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
         serializer = ReviewSerializer(data=request.data)
@@ -145,7 +138,7 @@ class RoomReviews(APIView):
             return Response(serializer.data)
 
 
-class RoomAmenities(APIView):
+class RoomAmenities(APIView, CustomPagination):
 
     def get_object(self, pk):
         try:
@@ -155,19 +148,12 @@ class RoomAmenities(APIView):
 
     def get(self, request, pk):
         room = self.get_object(pk=pk)
-        try:
-            page = request.query_params.get("page")
-            page = int(page)
-        except ValueError:
-            page = 1
-        page_size = settings.PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
-        serializer = AmenitySerializer(room.amenities.all()[start:end], many=True)
-        return Response(serializer.data)
+        amenities = room.amenities.all()
+        serializer = AmenitySerializer(self.paginate(amenities, request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
 
 
-class RoomPhotos(APIView):
+class RoomPhotos(APIView, CustomPagination):
 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -176,6 +162,11 @@ class RoomPhotos(APIView):
             return Room.objects.get(pk=pk)
         except Room.DoesNotExist:
             raise NotFound
+
+    def get(self, request, pk):
+        room = self.get_object(pk)
+        serializer = PhotoSerializer(self.paginate(room.photos.all(), request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
         room = self.get_object(pk)
@@ -190,12 +181,12 @@ class RoomPhotos(APIView):
             return Response(serializer.errors)
 
 
-class Amenities(APIView):
+class Amenities(APIView, CustomPagination):
 
     def get(self, request):
         all_amenities = Amenity.objects.all()
-        serializer = AmenitySerializer(all_amenities, many=True)
-        return Response(serializer.data)
+        serializer = AmenitySerializer(self.paginate(all_amenities, request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request):
         serializer = AmenitySerializer(data=request.data)
