@@ -8,6 +8,9 @@ from .models import Inclusion, Experience
 from .serializers import InclusionSerializer, ExperienceListSerializer, ExperienceDetailSerializer
 from common.paginations import CustomPagination
 from categories.models import Category
+from media.models import Photo, Video
+from reviews.serialrizers import ReviewSerializer
+from media.serializers import PhotoSerializer, VideoSerializer
 
 
 class InclusionList(APIView, CustomPagination):
@@ -183,3 +186,83 @@ class ExperienceItems(APIView):
         items = experience.inclusions.all()
         serializer = InclusionSerializer(items, many=True)
         return Response(serializer.data)
+
+
+class ExperienceReviews(APIView, CustomPagination):
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        serializer = ReviewSerializer(self.paginate(experience.reviews.all(), request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
+
+
+class ExperiencePhotos(APIView, CustomPagination):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        serializer = PhotoSerializer(self.paginate(experience.photos.all(), request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
+
+    def post(self, request, pk):
+        experience = self.get_object(pk)
+        if request.user != experience.host:  # not authenticated
+            raise PermissionDenied
+        serializer = PhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            photo = serializer.save(experience=experience, kind=Photo.PhotoKindChoices.EXPERIENCE)
+            serializer = PhotoSerializer(photo)
+            return Response(serializer.data)
+        else:  # not a valid photo
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class ExperienceVideo(APIView):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get_experience_video(self, experience):
+        try:
+            return experience.video
+        except Video.DoesNotExist:
+            return
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        if not self.get_experience_video(experience):
+            return Response(status=HTTP_204_NO_CONTENT)
+        serializer = VideoSerializer(experience.video)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        experience = self.get_object(pk)
+        if request.user != experience.host:  # not authenticated
+            raise PermissionDenied
+        serializer = VideoSerializer(data=request.data)
+        if serializer.is_valid():
+            if self.get_experience_video(experience):  # video already exists
+                raise ParseError("Only 1 video allowed for an experience")
+            video = serializer.save(experience=experience)
+            serializer = VideoSerializer(video)
+            return Response(serializer.data)
+        else:  # not a valid video
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
