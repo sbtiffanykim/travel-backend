@@ -36,7 +36,7 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
 
     inclusions = InclusionSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
-    host = SimpleUserSerializer()
+    host = SimpleUserSerializer(read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
     photos = PhotoSerializer(many=True, read_only=True)
     video = VideoSerializer(read_only=True)

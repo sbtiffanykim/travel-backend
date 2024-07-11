@@ -60,7 +60,7 @@ class ExperienceLists(APIView):
     def post(self, request):
         serializer = ExperienceDetailSerializer(data=request.data)
         if serializer.is_valid():
-            category_pks = request.data.get("category")
+            category_pks = request.data.get("categories")
             inclusions_pks = request.data.get("inclusions")
 
             if not category_pks:
@@ -68,25 +68,32 @@ class ExperienceLists(APIView):
 
             # check input categories
             try:
+                categories = []
                 for category_pk in category_pks:
-                    category = Category.objects.get(category_pk)
+                    category = Category.objects.get(pk=category_pk)
                     if category.kind != Category.CategoryKindChoices.EXPERIENCES:
                         raise ParseError("The Category shoud be 'experience'")
+                    categories.append(category)
             except Category.DoesNotExsit:
                 raise ParseError(f"The Category {category} does not exist")
 
+            # add inclusions
             try:
                 with transaction.atomic():
-                    new_experience = serializer.save(host=request.user, category=category)
+                    new_experience = serializer.save(host=request.user)
+                    new_experience.categories.set(categories)  # add multiple categories
                     if inclusions_pks:
                         for inclusion_pk in inclusions_pks:
-                            inclusion = Inclusion.objects.get(inclusion_pk)
-                            new_experience.Inclusions
+                            inclusion = Inclusion.objects.get(pk=inclusion_pk)
+                            new_experience.inclusions.add(inclusion)
 
             except Inclusion.DoesNotExist:
-                raise ParseError("Included Item does not found")
+                raise ParseError("Inclusion not found")
             except Exception as e:
                 raise ParseError(e)
+
+            serializer = ExperienceDetailSerializer(new_experience, context={"request": request})
+            return Response(serializer.data)
 
         else:
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
