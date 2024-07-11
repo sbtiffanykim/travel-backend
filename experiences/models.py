@@ -18,6 +18,9 @@ class Experience(CommonModel):
     inclusions = models.ManyToManyField("experiences.Inclusion", related_name="experiences")
     categories = models.ManyToManyField("categories.Category", related_name="experiences")
     max_capacity = models.PositiveIntegerField(blank=True, null=True)  # number of guests allowed
+    thumbnail = models.ForeignKey(
+        "media.Photo", on_delete=models.SET_NULL, null=True, blank=True, related_name="thumbnail"
+    )
 
     def __str__(self):
         return self.name

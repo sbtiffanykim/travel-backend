@@ -42,6 +42,7 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
     video = VideoSerializer(read_only=True)
     total_reviews = serializers.SerializerMethodField()
     rating_average = serializers.SerializerMethodField()
+    thumbnail = PhotoSerializer(read_only=True)
 
     class Meta:
         model = Experience
@@ -58,6 +59,7 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
             "categories",
             "total_reviews",
             "reviews",
+            "thumbnail",
             "photos",
             "video",
         )

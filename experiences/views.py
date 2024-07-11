@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 from rest_framework.exceptions import NotFound, PermissionDenied, ParseError
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .models import Inclusion, Experience
 from .serializers import InclusionSerializer, ExperienceListSerializer, ExperienceDetailSerializer
 from common.paginations import CustomPagination
@@ -228,6 +228,46 @@ class ExperiencePhotos(APIView, CustomPagination):
             return Response(serializer.data)
         else:  # not a valid photo
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class ExperienceThumbnailSelector(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def put(self, request, pk, photo_pk):
+        experience = self.get_object(pk)
+
+        # check if the request user is the host of the experience
+        if request.user != experience.host:
+            raise PermissionDenied
+
+        # retrieve the photo associated with the experience
+        try:
+            photo = Photo.objects.get(pk=photo_pk, experience=experience)
+        except Photo.DoesNotExist:
+            raise NotFound(f"Photo with id {photo_pk} not found for this experience")
+
+        # store the previous thumbnail
+        previous_thumbnail = experience.thumbnail
+
+        # set the new thumbnail
+        experience.thumbnail = photo
+        experience.save()
+
+        if previous_thumbnail and previous_thumbnail != photo:
+            message = "Thumbnail updated successfully"
+        else:
+            message = "Thumbnail set successfully"
+
+        serializer = PhotoSerializer(photo)
+
+        return Response({"message": message, "thumbnail": serializer.data})
 
 
 class ExperienceVideo(APIView):
