@@ -1,15 +1,15 @@
 from rest_framework import serializers
-from .models import Experience, IncludedItem
+from .models import Experience, Inclusion
 from common.serializers import SimpleUserSerializer
 from categories.serializers import CategorySerializer
 from reviews.serialrizers import ReviewSerializer
 from media.serializers import PhotoSerializer, VideoSerializer
 
 
-class IncludedItemSerializer(serializers.ModelSerializer):
+class InclusionSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = IncludedItem
+        model = Inclusion
         fields = ("pk", "name", "details", "description")
 
 
@@ -34,7 +34,7 @@ class ExperienceListSerializer(serializers.ModelSerializer):
 
 class ExperienceDetailSerializer(serializers.ModelSerializer):
 
-    included_items = IncludedItemSerializer(many=True, read_only=True)
+    inclusions = InclusionSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
     host = SimpleUserSerializer()
     reviews = ReviewSerializer(many=True, read_only=True)
@@ -54,7 +54,7 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
             "price",
             "max_capacity",
             "rating_average",
-            "included_items",
+            "inclusions",
             "categories",
             "total_reviews",
             "reviews",

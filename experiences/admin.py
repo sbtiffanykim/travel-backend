@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Experience, IncludedItem
+from .models import Experience, Inclusion
 
 
 @admin.register(Experience)
@@ -8,6 +8,6 @@ class ExperienceAdmin(admin.ModelAdmin):
     list_filter = ("country", "city")
 
 
-@admin.register(IncludedItem)
-class IncludedItemAdmin(admin.ModelAdmin):
+@admin.register(Inclusion)
+class InclusionAdmin(admin.ModelAdmin):
     list_display = ("name", "details")

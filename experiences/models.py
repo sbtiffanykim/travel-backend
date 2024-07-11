@@ -15,8 +15,8 @@ class Experience(CommonModel):
     start_time = models.TimeField()
     end_time = models.TimeField()
     description = models.TextField()
-    included_items = models.ManyToManyField("experiences.IncludedItem")
-    categories = models.ManyToManyField("categories.Category")
+    inclusions = models.ManyToManyField("experiences.Inclusion", related_name="experiences")
+    categories = models.ManyToManyField("categories.Category", related_name="experiences")
     max_capacity = models.PositiveIntegerField(blank=True, null=True)  # number of guests allowed
 
     def __str__(self):
@@ -35,7 +35,7 @@ class Experience(CommonModel):
     # remaining seats
 
 
-class IncludedItem(CommonModel):
+class Inclusion(CommonModel):
     """What is included on an experience"""
 
     name = models.CharField(max_length=100)

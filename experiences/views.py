@@ -4,44 +4,45 @@ from rest_framework.views import APIView
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 from rest_framework.exceptions import NotFound, PermissionDenied, ParseError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .models import IncludedItem, Experience
-from .serializers import IncludedItemSerializer, ExperienceListSerializer, ExperienceDetailSerializer
+from .models import Inclusion, Experience
+from .serializers import InclusionSerializer, ExperienceListSerializer, ExperienceDetailSerializer
+from common.paginations import CustomPagination
 from categories.models import Category
 
 
-class IncludedItems(APIView):
+class Inclusions(APIView, CustomPagination):
 
     def get(self, request):
-        all_included_items = IncludedItem.objects.all()
-        serializer = IncludedItemSerializer(all_included_items, many=True)
-        return Response(serializer.data)
+        all_inclusions = Inclusion.objects.all().order_by("id")
+        serializer = InclusionSerializer(self.paginate(all_inclusions, request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request):
-        serializer = IncludedItemSerializer(data=request.data)
+        serializer = InclusionSerializer(data=request.data)
         if serializer.is_valid():
             new_item = serializer.save()
-            return Response(IncludedItemSerializer(new_item).data)
+            return Response(InclusionSerializer(new_item).data)
         else:
             return Response(serializer.errors)
 
 
-class IncludedItemDetail(APIView):
+class InclusionDetail(APIView):
 
     def get_object(self, pk):
         try:
-            return IncludedItem.objects.get(pk=pk)
-        except IncludedItem.DoesNotExist:
+            return Inclusion.objects.get(pk=pk)
+        except Inclusion.DoesNotExist:
             raise NotFound
 
     def get(self, request, pk):
-        serializer = IncludedItemSerializer(self.get_object(pk))
+        serializer = InclusionSerializer(self.get_object(pk))
         return Response(serializer.data)
 
     def put(self, request, pk):
-        serializer = IncludedItemSerializer(self.get_object(pk), data=request.data, partial=True)
+        serializer = InclusionSerializer(self.get_object(pk), data=request.data, partial=True)
         if serializer.is_valid():
             updated_item = serializer.save()
-            return Response(IncludedItemSerializer(updated_item).data)
+            return Response(InclusionSerializer(updated_item).data)
         else:
             return Response(serializer.errors)
 
@@ -58,11 +59,37 @@ class ExperienceLists(APIView):
 
     def post(self, request):
         serializer = ExperienceDetailSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     categories = request.data.get("categories")
-        #     print(categories, type(categories))
-        # else:
-        #     return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        if serializer.is_valid():
+            category_pks = request.data.get("category")
+            inclusions_pks = request.data.get("inclusions")
+
+            if not category_pks:
+                raise ParseError("Category is required")
+
+            # check input categories
+            try:
+                for category_pk in category_pks:
+                    category = Category.objects.get(category_pk)
+                    if category.kind != Category.CategoryKindChoices.EXPERIENCES:
+                        raise ParseError("The Category shoud be 'experience'")
+            except Category.DoesNotExsit:
+                raise ParseError(f"The Category {category} does not exist")
+
+            try:
+                with transaction.atomic():
+                    new_experience = serializer.save(host=request.user, category=category)
+                    if inclusions_pks:
+                        for inclusion_pk in inclusions_pks:
+                            inclusion = Inclusion.objects.get(inclusion_pk)
+                            new_experience.Inclusions
+
+            except Inclusion.DoesNotExist:
+                raise ParseError("Included Item does not found")
+            except Exception as e:
+                raise ParseError(e)
+
+        else:
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class ExperienceDetail(APIView):
@@ -107,16 +134,16 @@ class ExperienceDetail(APIView):
                     updated_experience.categories.set(categories)
 
                 # check included items
-                item_pks = request.data.get("included_items")
+                item_pks = request.data.get("inclusions")
                 if item_pks:
                     items = []
                     for item_pk in item_pks:
                         try:
-                            item = IncludedItem.objects.get(pk=item_pk)
+                            item = Inclusion.objects.get(pk=item_pk)
                             items.append(item)
-                        except IncludedItem.DoesNotExist:
+                        except Inclusion.DoesNotExist:
                             raise ParseError(f"Item {item_pk} does not found")
-                    updated_experience.included_items.set(items)
+                    updated_experience.inclusions.set(items)
 
             return Response(ExperienceDetailSerializer(updated_experience, context={"request": request}).data)
 
@@ -141,6 +168,6 @@ class ExperienceItems(APIView):
 
     def get(self, request, pk):
         experience = self.get_object(pk)
-        items = experience.included_items.all()
-        serializer = IncludedItemSerializer(items, many=True)
+        items = experience.inclusions.all()
+        serializer = InclusionSerializer(items, many=True)
         return Response(serializer.data)
