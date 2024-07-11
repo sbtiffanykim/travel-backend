@@ -10,7 +10,7 @@ from common.paginations import CustomPagination
 from categories.models import Category
 
 
-class Inclusions(APIView, CustomPagination):
+class InclusionList(APIView, CustomPagination):
 
     def get(self, request):
         all_inclusions = Inclusion.objects.all().order_by("id")
@@ -27,6 +27,8 @@ class Inclusions(APIView, CustomPagination):
 
 
 class InclusionDetail(APIView):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_object(self, pk):
         try:
@@ -51,11 +53,14 @@ class InclusionDetail(APIView):
         return Response(status=HTTP_204_NO_CONTENT)
 
 
-class ExperienceLists(APIView):
+class ExperienceList(APIView, CustomPagination):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get(self, request):
         all_experiences = Experience.objects.all()
-        serializer = ExperienceListSerializer(all_experiences, many=True)
-        return Response(serializer.data)
+        serializer = ExperienceListSerializer(self.paginate(all_experiences, request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request):
         serializer = ExperienceDetailSerializer(data=request.data)
