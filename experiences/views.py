@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
@@ -9,8 +10,10 @@ from .serializers import InclusionSerializer, ExperienceListSerializer, Experien
 from common.paginations import CustomPagination
 from categories.models import Category
 from media.models import Photo, Video
+from bookings.models import Booking
 from reviews.serialrizers import ReviewSerializer
 from media.serializers import PhotoSerializer, VideoSerializer
+from bookings.serializers import PublicBookingSerializer, HostBookingRecordSerializer
 
 
 class InclusionList(APIView, CustomPagination):
@@ -306,3 +309,34 @@ class ExperienceVideo(APIView):
             return Response(serializer.data)
         else:  # not a valid video
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class ExperienceBookings(APIView, CustomPagination):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        current_time = timezone.localtime(timezone.now())
+
+        # determine which serializer to use based on whether the user is the host or not
+        if request.user == experience.host:
+            # if user is the host
+            bookings = Booking.objects.filter(
+                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
+            )
+            serializer = HostBookingRecordSerializer(self.paginate(bookings, request), many=True)
+
+        else:
+            # if user is not the host
+            bookings = Booking.objects.filter(
+                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
+            )
+            serializer = PublicBookingSerializer(self.paginate(bookings, request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})

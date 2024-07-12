@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from .models import Booking
-from common.serializers import SimpleRoomSerializer
+from common.serializers import SimpleUserSerializer
 
 
 class PublicBookingSerializer(serializers.ModelSerializer):
@@ -9,6 +9,30 @@ class PublicBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ("pk", "check_in", "check_out", "experience_date")
+
+
+class HostBookingRecordSerializer(serializers.ModelSerializer):
+    """Only for the host"""
+
+    user = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = (
+            "user",
+            "check_in",
+            "check_out",
+            "experience_date",
+            "guests",
+            "approval_status",
+            "is_cancelled",
+        )
+
+
+class UserBookingHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ("pk", "room", "experience", "check_in", "check_out", "experience_date")
 
 
 class CreateBookingSerializer(serializers.ModelSerializer):
@@ -41,12 +65,3 @@ class CreateBookingSerializer(serializers.ModelSerializer):
         ).exists():
             raise serializers.ValidationError("Room is not available during the selected period")
         return data
-
-
-class BookingRecordSerializer(serializers.ModelSerializer):
-
-    room = SimpleRoomSerializer(read_only=True)
-
-    class Meta:
-        model = Booking
-        fields = ("pk", "check_in", "check_out", "room")

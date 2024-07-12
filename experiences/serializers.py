@@ -23,7 +23,18 @@ class ExperienceListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experience
-        fields = ("pk", "name", "country", "host", "price", "total_reviews", "rating_average", "photos", "video")
+        fields = (
+            "pk",
+            "name",
+            "country",
+            "host",
+            "price",
+            "total_reviews",
+            "rating_average",
+            "photos",
+            "video",
+            "duration",
+        )
 
     def get_total_reviews(self, experience):
         return experience.total_reviews()
@@ -54,6 +65,9 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
             "host",
             "price",
             "max_capacity",
+            "start_time",
+            "end_time",
+            "duration",
             "rating_average",
             "inclusions",
             "categories",

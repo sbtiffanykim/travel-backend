@@ -5,7 +5,7 @@ from rooms.serializers import HostRoomSerializer
 from reviews.models import Review
 from reviews.serialrizers import HostReviewSerializer, UserReviewSerializer
 from bookings.models import Booking
-from bookings.serializers import BookingRecordSerializer
+from bookings.serializers import UserBookingHistorySerializer
 
 
 class PrivateUserSerializer(serializers.ModelSerializer):
@@ -64,4 +64,4 @@ class PublicUserSerializer(serializers.ModelSerializer):
     def get_booking_records(self, user):
         booking_records = Booking.objects.filter(user=user).order_by("-check_out")
         # [total_num_of_bookings, booking_lists]
-        return [booking_records.count(), BookingRecordSerializer(booking_records, many=True).data]
+        return [booking_records.count(), UserBookingHistorySerializer(booking_records, many=True).data]

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db import models
 from django.db.models import Avg
 from common.models import CommonModel
@@ -14,6 +15,7 @@ class Experience(CommonModel):
     price = models.PositiveBigIntegerField()
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
+    duration = models.DurationField(default=timedelta(hours=1))
     description = models.TextField()
     inclusions = models.ManyToManyField("experiences.Inclusion", related_name="experiences")
     categories = models.ManyToManyField("categories.Category", related_name="experiences")
