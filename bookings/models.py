@@ -17,8 +17,8 @@ class Booking(CommonModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name='bookings')
     kind = models.CharField(max_length=14, choices=BookingKindChoices.choices)
     room = models.ForeignKey("rooms.Room", on_delete=models.SET_NULL, blank=True, null=True, related_name='bookings')  # one-to-many
-    experience = models.ForeignKey(
-        "experiences.Experience", on_delete=models.SET_NULL, blank=True, null=True, related_name='bookings'
+    experience_session = models.ForeignKey(
+        "experiences.ExperienceSession", on_delete=models.SET_NULL, blank=True, null=True, related_name='bookings'
     )
     check_in = models.DateField(blank=True, null=True)
     check_out = models.DateField(blank=True, null=True)

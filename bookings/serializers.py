@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from .models import Booking
+from experiences.models import Experience
 from common.serializers import SimpleUserSerializer
 
 
@@ -64,4 +65,22 @@ class CreateBookingSerializer(serializers.ModelSerializer):
             check_in__lt=data.get("check_out"), check_out__gt=data.get("check_in"), room_id=room_pk
         ).exists():
             raise serializers.ValidationError("Room is not available during the selected period")
+        return data
+
+
+class CreateExperienceBookingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Booking
+        fields = ("pk", "experience_date", "guests")
+
+    def validate(self, data):
+        experience_pk = self.context.get("pk")
+        experience = Experience.objects.get(pk=experience_pk)
+        input_date = data.get("experience_date")
+        input_guests = data.get("guests")
+
+        if input_guests > experience.available_slots(input_date):
+            raise serializers.ValidationError("Not enough slots available for the selected time")
+
         return data

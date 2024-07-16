@@ -13,7 +13,7 @@ from media.models import Photo, Video
 from bookings.models import Booking
 from reviews.serialrizers import ReviewSerializer
 from media.serializers import PhotoSerializer, VideoSerializer
-from bookings.serializers import PublicBookingSerializer, HostBookingRecordSerializer
+from bookings.serializers import PublicBookingSerializer, HostBookingRecordSerializer, CreateExperienceBookingSerializer
 
 
 class InclusionList(APIView, CustomPagination):
@@ -108,72 +108,6 @@ class ExperienceList(APIView, CustomPagination):
 
         else:
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
-
-
-class ExperienceDetail(APIView):
-
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, pk):
-        try:
-            return Experience.objects.get(pk=pk)
-        except Experience.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk):
-        experience = self.get_object(pk)
-        serializer = ExperienceDetailSerializer(experience)
-        return Response(serializer.data)
-
-    def put(self, request, pk):
-        experience = self.get_object(pk)
-
-        if request.user != experience.host:
-            raise PermissionDenied
-
-        serializer = ExperienceDetailSerializer(experience, data=request.data, partial=True)
-
-        if serializer.is_valid():
-            updated_experience = serializer.save()
-
-            with transaction.atomic():
-                # check categories
-                category_pks = request.data.get("categories")
-                if category_pks:
-                    categories = []
-                    for category_pk in category_pks:
-                        try:
-                            category = Category.objects.get(pk=category_pk)
-                            if category.kind != category.CategoryKindChoices.EXPERIENCES:
-                                raise ParseError(f"Category {category_pk} must be in 'experience' Category")
-                            categories.append(category)
-                        except Category.DoesNotExist:
-                            raise ParseError(f"Category {category_pk} does not found")
-                    updated_experience.categories.set(categories)
-
-                # check included items
-                item_pks = request.data.get("inclusions")
-                if item_pks:
-                    items = []
-                    for item_pk in item_pks:
-                        try:
-                            item = Inclusion.objects.get(pk=item_pk)
-                            items.append(item)
-                        except Inclusion.DoesNotExist:
-                            raise ParseError(f"Item {item_pk} does not found")
-                    updated_experience.inclusions.set(items)
-
-            return Response(ExperienceDetailSerializer(updated_experience, context={"request": request}).data)
-
-        else:
-            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        experience = self.get_object(pk)
-        if request.user != experience.host:
-            raise PermissionDenied
-        experience.delete()
-        return Response(status=HTTP_204_NO_CONTENT)
 
 
 class ExperienceItems(APIView):
@@ -311,7 +245,7 @@ class ExperienceVideo(APIView):
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class ExperienceBookings(APIView, CustomPagination):
+class ExperienceDetail(APIView):
 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -323,20 +257,55 @@ class ExperienceBookings(APIView, CustomPagination):
 
     def get(self, request, pk):
         experience = self.get_object(pk)
-        current_time = timezone.localtime(timezone.now())
+        serializer = ExperienceDetailSerializer(experience)
+        return Response(serializer.data)
 
-        # determine which serializer to use based on whether the user is the host or not
-        if request.user == experience.host:
-            # if user is the host
-            bookings = Booking.objects.filter(
-                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
-            )
-            serializer = HostBookingRecordSerializer(self.paginate(bookings, request), many=True)
+    def put(self, request, pk):
+        experience = self.get_object(pk)
+
+        if request.user != experience.host:
+            raise PermissionDenied
+
+        serializer = ExperienceDetailSerializer(experience, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            updated_experience = serializer.save()
+
+            with transaction.atomic():
+                # check categories
+                category_pks = request.data.get("categories")
+                if category_pks:
+                    categories = []
+                    for category_pk in category_pks:
+                        try:
+                            category = Category.objects.get(pk=category_pk)
+                            if category.kind != category.CategoryKindChoices.EXPERIENCES:
+                                raise ParseError(f"Category {category_pk} must be in 'experience' Category")
+                            categories.append(category)
+                        except Category.DoesNotExist:
+                            raise ParseError(f"Category {category_pk} does not found")
+                    updated_experience.categories.set(categories)
+
+                # check included items
+                item_pks = request.data.get("inclusions")
+                if item_pks:
+                    items = []
+                    for item_pk in item_pks:
+                        try:
+                            item = Inclusion.objects.get(pk=item_pk)
+                            items.append(item)
+                        except Inclusion.DoesNotExist:
+                            raise ParseError(f"Item {item_pk} does not found")
+                    updated_experience.inclusions.set(items)
+
+            return Response(ExperienceDetailSerializer(updated_experience, context={"request": request}).data)
 
         else:
-            # if user is not the host
-            bookings = Booking.objects.filter(
-                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
-            )
-            serializer = PublicBookingSerializer(self.paginate(bookings, request), many=True)
-        return Response({"page": self.link_info, "content": serializer.data})
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        experience = self.get_object(pk)
+        if request.user != experience.host:
+            raise PermissionDenied
+        experience.delete()
+        return Response(status=HTTP_204_NO_CONTENT)
