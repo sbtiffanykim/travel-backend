@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime, time
 from django.db import models
-from django.db.models import Avg
+from django.db.models import Q, F, Avg, Sum, Value
+from django.db.models.functions import Coalesce
 from common.models import CommonModel
 from bookings.models import Booking
 
@@ -25,7 +26,7 @@ class Experience(CommonModel):
     end_date = models.DateField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
-    duration = models.DurationField(default=timedelta(hours=1))
+    duration = models.DurationField(default=timedelta(hours=2))
 
     def __str__(self):
         return self.name
@@ -40,8 +41,8 @@ class Experience(CommonModel):
         else:
             return round(rating_avg, 2)
 
+    # create sessions based on start_date, end_date, start_time, end_time, and duration
     def create_sessions(self):
-        # create sessions based on start_date, end_date, start_time, end_time, and duration
 
         current_date = self.start_date
         while current_date <= self.end_date:
@@ -66,6 +67,49 @@ class Experience(CommonModel):
             # move to the next day
             current_date += timedelta(days=1)
 
+    def get_available_sessions(self, check_in, check_out, guests):
+
+        available_sessions = self.sessions.filter(
+            date__range=[check_in, check_out],
+        ).annotate(
+            total_booked=Coalesce(
+                Sum(
+                    "bookings__guests",
+                    filter=Q(
+                        bookings__is_cancelled=False,
+                        bookings__approval_status__in=[
+                            Booking.BookingApprovalStatusChoices.APPROVED,
+                            Booking.BookingApprovalStatusChoices.PENDING,
+                        ],
+                    ),
+                ),
+                Value(0),
+            )
+        )
+
+        if guests:
+            available_sessions = available_sessions.filter(
+                Q(experience__max_capacity__gte=guests)
+                & Q(experience__max_capacity__gt=models.F("total_booked") + guests)
+            )
+        else:
+            available_sessions = available_sessions.filter(experience__max_capacity__gt=models.F("total_booked"))
+
+        return available_sessions.distinct()
+
+    @classmethod
+    def get_available_experiences(cls, check_in, check_out, guests, country):
+        experiences = cls.objects.filter(country=country)
+        available_experiences = []
+
+        for experience in experiences:
+            available_sessions = experience.get_available_sessions(check_in, check_out, guests)
+            if available_sessions.exists():
+                available_experiences.append(experience)
+
+        # print(f"experiences: {available_experiences}")
+        return cls.objects.filter(id__in=[exp.id for exp in available_experiences])
+
 
 class ExperienceSession(CommonModel):
     """Experience Session Model Definition"""
@@ -80,15 +124,14 @@ class ExperienceSession(CommonModel):
     # calculate remaining slots
     def available_slots(self):
         bookings = self.bookings.filter(
-            experience_session=self,
             is_cancelled=False,
             approval_status__in=[
                 Booking.BookingApprovalStatusChoices.APPROVED,
                 Booking.BookingApprovalStatusChoices.PENDING,
             ],
         )
-        total_booked = sum(booking.guests for booking in bookings)
-        return self.max_capacity - total_booked if self.max_capacity else None
+        total_booked = bookings.aggregate(Sum("guests"))["guests__sum"] or 0
+        return self.experience.max_capacity - total_booked if self.experience.max_capacity else None
 
 
 class Inclusion(CommonModel):

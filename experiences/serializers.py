@@ -17,8 +17,7 @@ class ExperienceListSerializer(serializers.ModelSerializer):
 
     total_reviews = serializers.SerializerMethodField()
     rating_average = serializers.SerializerMethodField()
-    host = SimpleUserSerializer()
-    photos = PhotoSerializer(many=True, read_only=True)
+    thumbnail = PhotoSerializer(read_only=True)
     video = VideoSerializer(read_only=True)
 
     class Meta:
@@ -26,14 +25,12 @@ class ExperienceListSerializer(serializers.ModelSerializer):
         fields = (
             "pk",
             "name",
-            "country",
-            "host",
+            "city",
             "price",
             "total_reviews",
             "rating_average",
-            "photos",
+            "thumbnail",
             "video",
-            "duration",
         )
 
     def get_total_reviews(self, experience):

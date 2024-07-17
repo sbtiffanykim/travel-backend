@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
@@ -64,9 +65,22 @@ class ExperienceList(APIView, CustomPagination):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        all_experiences = Experience.objects.all()
-        serializer = ExperienceListSerializer(self.paginate(all_experiences, request), many=True)
-        return Response({"page": self.link_info, "content": serializer.data})
+
+        check_in = request.query_params.get("check_in")
+        check_out = request.query_params.get("check_out")
+        guests = request.query_params.get("guests")
+        country = request.query_params.get("country")
+
+        if check_in and check_out and guests and country:
+            check_in = parse_date(check_in)
+            check_out = parse_date(check_out)
+            guests = int(guests)
+            experiences = Experience.get_available_experiences(check_in, check_out, guests, country)
+        else:
+            experiences = Experience.objects.all()
+
+        serializer = ExperienceListSerializer(self.paginate(experiences, request), many=True)
+        return Response({"page": self.link_info, "experience_count": experiences.count(), "content": serializer.data})
 
     def post(self, request):
         serializer = ExperienceDetailSerializer(data=request.data)
@@ -309,3 +323,48 @@ class ExperienceDetail(APIView):
             raise PermissionDenied
         experience.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+class ExperienceBookings(APIView, CustomPagination):
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        current_time = timezone.localtime(timezone.now())
+
+        # determine which serializer to use based on whether the user is the host or not
+        if request.user == experience.host:
+            # if user is the host
+            bookings = Booking.objects.filter(
+                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
+            )
+            serializer = HostBookingRecordSerializer(self.paginate(bookings, request), many=True)
+
+        else:
+            # if user is not the host
+            bookings = Booking.objects.filter(
+                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
+            )
+            serializer = PublicBookingSerializer(self.paginate(bookings, request), many=True)
+        return Response({"page": self.link_info, "content": serializer.data})
+
+    def post(self, request, pk):
+        experience = self.get_object(pk)
+        serializer = CreateExperienceBookingSerializer(data=request.data, context={"pk": pk})
+
+        if serializer.is_valid():
+            with transaction.atomic():
+                booking = serializer.save(
+                    user=request.user, kind=Booking.BookingKindChoices.EXPERIENCE, experience=experience
+                )
+                serializer = CreateExperienceBookingSerializer(booking)
+                return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
