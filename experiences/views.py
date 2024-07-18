@@ -159,7 +159,9 @@ class ExperienceReviews(APIView, CustomPagination):
 
     def get(self, request, pk):
         experience = self.get_object(pk)
-        serializer = ReviewSerializer(self.paginate(experience.reviews.all(), request), many=True)
+        serializer = ReviewSerializer(
+            self.paginate(experience.reviews.all().order_by("-created_date"), request), many=True
+        )
         return Response({"page": self.link_info, "content": serializer.data})
 
 
@@ -175,7 +177,7 @@ class ExperiencePhotos(APIView, CustomPagination):
 
     def get(self, request, pk):
         experience = self.get_object(pk)
-        serializer = PhotoSerializer(self.paginate(experience.photos.all(), request), many=True)
+        serializer = PhotoSerializer(self.paginate(experience.photos.all().order_by("pk"), request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
@@ -356,7 +358,7 @@ class ExperienceBookings(APIView, CustomPagination):
                 experience_session__experience=experience,
                 kind=Booking.BookingKindChoices.EXPERIENCE,
                 experience_date__gte=current_time,
-            )
+            ).order_by("-experience_date", "created_date")
             serializer = HostBookingRecordSerializer(self.paginate(bookings, request), many=True)
 
         else:
@@ -365,7 +367,7 @@ class ExperienceBookings(APIView, CustomPagination):
                 experience_session__experience=experience,
                 kind=Booking.BookingKindChoices.EXPERIENCE,
                 experience_date__gte=current_time,
-            )
+            ).order_by("-experience_date", "created_date")
             serializer = PublicBookingSerializer(self.paginate(bookings, request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 

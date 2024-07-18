@@ -15,7 +15,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("pk", "name", "username", "profile_picture")
+        fields = ("pk", "username", "profile_picture")
 
 
 class SimpleExperienceSerializer(serializers.ModelSerializer):
