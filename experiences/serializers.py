@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Experience, Inclusion
+from rest_framework.serializers import ValidationError
+from .models import Experience, Inclusion, ExperienceSession
 from common.serializers import SimpleUserSerializer
 from categories.serializers import CategorySerializer
 from reviews.serialrizers import ReviewSerializer
@@ -62,6 +63,8 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
             "host",
             "price",
             "max_capacity",
+            "start_date",
+            "end_date",
             "start_time",
             "end_time",
             "duration",
@@ -80,3 +83,19 @@ class ExperienceDetailSerializer(serializers.ModelSerializer):
 
     def get_total_reviews(self, experiences):
         return experiences.total_reviews()
+
+    def validate(self, data):
+
+        if data["start_date"] >= data["end_date"]:
+            raise ValidationError("End date must be after start date")
+        if data["start_time"] >= data["end_time"]:
+            raise ValidationError("End time must be after start time")
+
+        return data
+
+
+class ExperienceSessionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ExperienceSession
+        fields = ("date", "start_time", "end_time", "is_available", "capacity")

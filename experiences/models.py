@@ -121,6 +121,9 @@ class ExperienceSession(CommonModel):
     capacity = models.PositiveIntegerField()
     is_available = models.BooleanField(default=True)
 
+    def __str__(self):
+        return f"{self.experience}: {self.date} / {self.start_time} - {self.end_time}"
+
     # calculate remaining slots
     def available_slots(self):
         bookings = self.bookings.filter(
@@ -131,7 +134,7 @@ class ExperienceSession(CommonModel):
             ],
         )
         total_booked = bookings.aggregate(Sum("guests"))["guests__sum"] or 0
-        return self.experience.max_capacity - total_booked if self.experience.max_capacity else None
+        return self.capacity - total_booked
 
 
 class Inclusion(CommonModel):

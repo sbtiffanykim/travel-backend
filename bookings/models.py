@@ -28,4 +28,4 @@ class Booking(CommonModel):
     is_cancelled = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'Booking {self.kind.title()}: {self.room if self.kind=='room' else self.experience} by {self.user}'
+        return f'Booking {self.kind.title()}: {self.room if self.kind=='room' else self.experience_session} by {self.user}'

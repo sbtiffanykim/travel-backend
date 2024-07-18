@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -7,7 +8,12 @@ from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 from rest_framework.exceptions import NotFound, PermissionDenied, ParseError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .models import Inclusion, Experience
-from .serializers import InclusionSerializer, ExperienceListSerializer, ExperienceDetailSerializer
+from .serializers import (
+    InclusionSerializer,
+    ExperienceListSerializer,
+    ExperienceDetailSerializer,
+    ExperienceSessionSerializer,
+)
 from common.paginations import CustomPagination
 from categories.models import Category
 from media.models import Photo, Video
@@ -83,6 +89,7 @@ class ExperienceList(APIView, CustomPagination):
         return Response({"page": self.link_info, "experience_count": experiences.count(), "content": serializer.data})
 
     def post(self, request):
+
         serializer = ExperienceDetailSerializer(data=request.data)
         if serializer.is_valid():
             category_pks = request.data.get("categories")
@@ -99,7 +106,7 @@ class ExperienceList(APIView, CustomPagination):
                     if category.kind != Category.CategoryKindChoices.EXPERIENCES:
                         raise ParseError("The Category shoud be 'experience'")
                     categories.append(category)
-            except Category.DoesNotExsit:
+            except Category.DoesNotExist:
                 raise ParseError(f"The Category {category} does not exist")
 
             # add inclusions
@@ -112,13 +119,16 @@ class ExperienceList(APIView, CustomPagination):
                             inclusion = Inclusion.objects.get(pk=inclusion_pk)
                             new_experience.inclusions.add(inclusion)
 
+                    new_experience.create_sessions()  # create sessions
+
             except Inclusion.DoesNotExist:
                 raise ParseError("Inclusion not found")
             except Exception as e:
                 raise ParseError(e)
 
-            serializer = ExperienceDetailSerializer(new_experience, context={"request": request})
-            return Response(serializer.data)
+            exp_serializer = ExperienceDetailSerializer(new_experience, context={"request": request})
+            session_serializer = ExperienceSessionSerializer(new_experience.sessions, many=True)
+            return Response({"content": [exp_serializer.data, session_serializer.data]})
 
         else:
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -343,27 +353,34 @@ class ExperienceBookings(APIView, CustomPagination):
         if request.user == experience.host:
             # if user is the host
             bookings = Booking.objects.filter(
-                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
+                experience_session__experience=experience,
+                kind=Booking.BookingKindChoices.EXPERIENCE,
+                experience_date__gte=current_time,
             )
             serializer = HostBookingRecordSerializer(self.paginate(bookings, request), many=True)
 
         else:
             # if user is not the host
             bookings = Booking.objects.filter(
-                experience=experience, kind=Booking.BookingKindChoices.EXPERIENCE, experience_date__gte=current_time
+                experience_session__experience=experience,
+                kind=Booking.BookingKindChoices.EXPERIENCE,
+                experience_date__gte=current_time,
             )
             serializer = PublicBookingSerializer(self.paginate(bookings, request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
-        experience = self.get_object(pk)
         serializer = CreateExperienceBookingSerializer(data=request.data, context={"pk": pk})
 
         if serializer.is_valid():
+            session = serializer.validated_data["experience_session"]
+
             with transaction.atomic():
                 booking = serializer.save(
-                    user=request.user, kind=Booking.BookingKindChoices.EXPERIENCE, experience=experience
+                    user=request.user, kind=Booking.BookingKindChoices.EXPERIENCE, experience_session=session
                 )
+                booking.experience_date = datetime.combine(session.date, session.start_time)
+                booking.save()
                 serializer = CreateExperienceBookingSerializer(booking)
                 return Response(serializer.data)
         else:
