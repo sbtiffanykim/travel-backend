@@ -26,6 +26,7 @@ class Room(CommonModel):
     category = models.ForeignKey(
         "categories.Category", on_delete=models.SET_NULL, blank=True, null=True, related_name="rooms"
     )
+    max_capacity = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.name
