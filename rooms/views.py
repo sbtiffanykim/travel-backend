@@ -1,6 +1,7 @@
-from django.conf import settings
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.db import transaction
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
@@ -18,13 +19,36 @@ from bookings.models import Booking
 from bookings.serializers import PublicBookingSerializer, CreateBookingSerializer
 
 
-class Rooms(APIView, CustomPagination):
+class RoomList(APIView, CustomPagination):
 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        all_rooms = Room.objects.all()
-        serializer = RoomListSerializer(self.paginate(all_rooms, request), many=True, context={"request": request})
+
+        check_in = request.query_params.get("check_in")
+        check_out = request.query_params.get("check_out")
+        guests = request.query_params.get("guests")
+        country = request.query_params.get("country")
+
+        if check_in and check_out and guests and country:
+            check_in = parse_date(check_in)
+            check_out = parse_date(check_out)
+            guests = int(guests)
+
+            booked_rooms = Booking.objects.filter(Q(check_in__lt=check_out, check_out__gt=check_in)).values_list(
+                "room", flat=True
+            )
+
+            rooms = (
+                Room.objects.filter(country=country, max_capacity__gte=guests)
+                .exclude(pk__in=booked_rooms)
+                .order_by("pk")
+            )
+
+        else:
+            rooms = Room.objects.all().order_by("pk")
+
+        serializer = RoomListSerializer(self.paginate(rooms, request), many=True, context={"request": request})
         return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request):
