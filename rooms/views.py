@@ -155,7 +155,7 @@ class RoomReviews(APIView, CustomPagination):
 
     def get(self, request, pk):
         room = self.get_object(pk)
-        serializer = ReviewSerializer(self.paginate(room.reviews.all(), request), many=True)
+        serializer = ReviewSerializer(self.paginate(room.reviews.all().order_by("-created_date"), request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
@@ -163,7 +163,6 @@ class RoomReviews(APIView, CustomPagination):
         if serializer.is_valid():
             review = serializer.save(user=request.user, kind=Review.ReviewKindChoices.ROOM, room=self.get_object(pk))
             serializer = ReviewSerializer(review)
-            print(serializer.data)
             return Response(serializer.data)
 
 
