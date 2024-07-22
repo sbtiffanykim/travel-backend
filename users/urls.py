@@ -1,3 +1,4 @@
+from rest_framework.authtoken.views import obtain_auth_token
 from django.urls import path
 from . import views
 
@@ -12,4 +13,5 @@ urlpatterns = [
     path("change-password", views.ChangePassword.as_view()),
     path("log-in", views.LogIn.as_view()),
     path("log-out", views.LogOut.as_view()),
+    path("get-token", obtain_auth_token),
 ]
