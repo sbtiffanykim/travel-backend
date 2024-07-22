@@ -176,7 +176,7 @@ class RoomAmenities(APIView, CustomPagination):
 
     def get(self, request, pk):
         room = self.get_object(pk=pk)
-        amenities = room.amenities.all()
+        amenities = room.amenities.all().order_by("pk")
         serializer = AmenitySerializer(self.paginate(amenities, request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 
