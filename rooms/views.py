@@ -209,10 +209,10 @@ class RoomPhotos(APIView, CustomPagination):
             return Response(serializer.errors)
 
 
-class Amenities(APIView, CustomPagination):
+class AmenityList(APIView, CustomPagination):
 
     def get(self, request):
-        all_amenities = Amenity.objects.all()
+        all_amenities = Amenity.objects.all().order_by("pk")
         serializer = AmenitySerializer(self.paginate(all_amenities, request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 
