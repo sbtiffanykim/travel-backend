@@ -18,6 +18,7 @@ from common.paginations import CustomPagination
 from categories.models import Category
 from media.models import Photo, Video
 from bookings.models import Booking
+from reviews.models import Review
 from reviews.serialrizers import ReviewSerializer
 from media.serializers import PhotoSerializer, VideoSerializer
 from bookings.serializers import PublicBookingSerializer, HostBookingRecordSerializer, CreateExperienceBookingSerializer
@@ -163,6 +164,15 @@ class ExperienceReviews(APIView, CustomPagination):
             self.paginate(experience.reviews.all().order_by("-created_date"), request), many=True
         )
         return Response({"page": self.link_info, "content": serializer.data})
+
+    def post(self, request, pk):
+        serializer = ReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            review = serializer.save(
+                user=request.user, kind=Review.ReviewKindChoices.EXPERIENCE, experience=self.get_object(pk)
+            )
+            serializer = ReviewSerializer(review)
+            return Response(serializer.data)
 
 
 class ExperiencePhotos(APIView, CustomPagination):
