@@ -57,12 +57,16 @@ class RoomList(APIView, CustomPagination):
             category_pk = request.data.get("category")
             if not category_pk:
                 raise ParseError("Category is required")
+
+            # check input category
             try:
                 category = Category.objects.get(pk=category_pk)
                 if category.kind == Category.CategoryKindChoices.EXPERIENCES:
                     raise ParseError("The category should be 'rooms'")
             except Category.DoesNotExist:
-                raise ParseError("The Category does not exist")
+                raise ParseError(f"The Category {category} does not exist")
+
+            # add amenities
             try:
                 with transaction.atomic():
                     new_room = serializer.save(host=request.user, category=category)
@@ -74,6 +78,7 @@ class RoomList(APIView, CustomPagination):
                     return Response(serializer.data)
             except Exception:
                 raise ParseError("Amenity not found")
+
         else:
             return Response(serializer.errors)
 
