@@ -145,7 +145,7 @@ class ExperienceItems(APIView):
 
     def get(self, request, pk):
         experience = self.get_object(pk)
-        items = experience.inclusions.all()
+        items = experience.inclusions.all().order_by("pk")
         serializer = InclusionSerializer(items, many=True)
         return Response(serializer.data)
 
