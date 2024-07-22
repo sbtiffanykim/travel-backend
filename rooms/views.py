@@ -193,7 +193,7 @@ class RoomPhotos(APIView, CustomPagination):
 
     def get(self, request, pk):
         room = self.get_object(pk)
-        serializer = PhotoSerializer(self.paginate(room.photos.all(), request), many=True)
+        serializer = PhotoSerializer(self.paginate(room.photos.all().order_by("pk"), request), many=True)
         return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
