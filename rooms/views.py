@@ -5,7 +5,7 @@ from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
-from rest_framework.status import HTTP_204_NO_CONTENT
+from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
 from categories.models import Category
 from common.paginations import CustomPagination
@@ -16,7 +16,7 @@ from media.serializers import PhotoSerializer
 from reviews.models import Review
 from media.models import Photo
 from bookings.models import Booking
-from bookings.serializers import PublicBookingSerializer, CreateBookingSerializer
+from bookings.serializers import PublicBookingSerializer, CreateBookingSerializer, HostBookingRecordSerializer
 
 
 class RoomList(APIView, CustomPagination):
@@ -251,7 +251,7 @@ class AmenityDetail(APIView):
         return Response(status=HTTP_204_NO_CONTENT)
 
 
-class RoomBookings(APIView):
+class RoomBookings(APIView, CustomPagination):
 
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -263,13 +263,24 @@ class RoomBookings(APIView):
 
     def get(self, request, pk):
         current_time = timezone.localtime(timezone.now()).date()
-        # user가 month, year를 넘겨주면 거기에 대한 booking 보여주기
         room = self.get_object(pk=pk)
-        bookings = Booking.objects.filter(
-            room__pk=room.pk, kind=Booking.BookingKindChoices.ROOM, check_in__gt=current_time
-        )
-        serializer = PublicBookingSerializer(bookings, many=True)
-        return Response(serializer.data)
+
+        # determine which serializer to use based on whether the user is the host or not
+        if request.user == room.host:
+            # if user is the host
+            bookings = Booking.objects.filter(
+                room__pk=room.pk, kind=Booking.BookingKindChoices.ROOM, check_in__gte=current_time
+            ).order_by("check_in", "created_date")
+            serializer = HostBookingRecordSerializer(self.paginate(bookings, request), many=True)
+
+        else:
+            # if user is not the host
+            bookings = Booking.objects.filter(
+                room__pk=room.pk, kind=Booking.BookingKindChoices.ROOM, check_in__gte=current_time
+            ).order_by("check_in", "created_date")
+            serializer = PublicBookingSerializer(self.paginate(bookings, request), many=True)
+
+        return Response({"page": self.link_info, "content": serializer.data})
 
     def post(self, request, pk):
         room = self.get_object(pk)
@@ -279,4 +290,4 @@ class RoomBookings(APIView):
             serializer = PublicBookingSerializer(saved_booking)
             return Response(serializer.data)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
