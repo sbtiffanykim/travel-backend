@@ -80,7 +80,7 @@ class RoomList(APIView, CustomPagination):
                 raise ParseError("Amenity not found")
 
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class RoomDetail(APIView):
@@ -133,7 +133,7 @@ class RoomDetail(APIView):
             return Response(RoomDetailSerializer(room, context={"request": request}).data)
 
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         room = self.get_object(pk)
@@ -206,7 +206,7 @@ class RoomPhotos(APIView, CustomPagination):
             serializer = PhotoSerializer(photo)
             return Response(serializer.data)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class AmenityList(APIView, CustomPagination):
@@ -222,7 +222,7 @@ class AmenityList(APIView, CustomPagination):
             new_amenity = serializer.save()
             return Response(AmenitySerializer(new_amenity).data)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class AmenityDetail(APIView):
@@ -244,7 +244,7 @@ class AmenityDetail(APIView):
             updated_amenity = serializer.save()
             return Response(AmenitySerializer(updated_amenity).data)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         self.get_object(pk).delete()
