@@ -1,5 +1,3 @@
-import jwt
-from django.conf import settings
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.views import APIView
@@ -161,17 +159,17 @@ class UserReviews(APIView):
         return Response(serializer.data)
 
 
-class JWTLogIn(APIView):
+# class JWTLogIn(APIView):
 
-    def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-        if not username or not password:
-            raise ParseError
-        user = authenticate(request, username=username, password=password)
+#     def post(self, request):
+#         username = request.data.get("username")
+#         password = request.data.get("password")
+#         if not username or not password:
+#             raise ParseError
+#         user = authenticate(request, username=username, password=password)
 
-        if user:
-            token = jwt.encode({"pk": user.pk}, settings.SECRET_KEY, algorithm="HS256")
-            return Response({"token": token})
-        else:
-            return Response({"Error": "Wrong Password"})
+#         if user:
+#             token = jwt.encode({"pk": user.pk}, settings.SECRET_KEY, algorithm="HS256")
+#             return Response({"token": token})
+#         else:
+#             return Response({"Error": "Wrong Password"})
