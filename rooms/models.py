@@ -16,6 +16,7 @@ class Room(CommonModel):
     city = models.CharField(max_length=80, default="")
     price = models.PositiveIntegerField()
     number_of_rooms = models.PositiveIntegerField(verbose_name="rooms")
+    bedrooms = models.PositiveIntegerField()
     bathrooms = models.PositiveIntegerField()
     description = models.TextField()
     address = models.CharField(max_length=250)
